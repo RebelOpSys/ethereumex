@@ -5,6 +5,31 @@ defmodule Ethereumex.Client do
 
   alias Ethereumex.Client.Utils
 
+  def compile_solidity(sol_code) do
+    guid = UUID.uuid1()
+    {:ok, file} = File.open guid <> ".sol", [:write]
+    IO.binwrite file, sol_code
+    file |> File.close
+
+    System.cmd("solc", ["-o", "sol_output_#{guid}", "--bin", "--optimize", "--ast", "--asm", "--abi", "#{guid}.sol"])
+
+    {:ok, abiFile} = "sol_output_#{guid}/*.abi" |> Path.wildcard |> Enum.at(0) |> File.open([:read])
+   
+    IO.puts "Compiled abi is:"
+
+    abi = abiFile |> IO.read(:all) |> Poison.decode!
+    abiFile |> File.close
+
+    {:ok, binFile} = "sol_output_#{guid}/*.bin" |> Path.wildcard |> Enum.at(0) |> File.open
+    bin = binFile |> IO.binread(:all)
+    binFile |> File.close
+
+    "sol_output_#{guid}" |> File.rm_rf
+    "#{guid}.sol" |> File.rm_rf
+
+    %{"abi" => abi, "bin"=>bin}
+  end
+
   defmacro __using__(_) do
     methods = Utils.available_methods
 
