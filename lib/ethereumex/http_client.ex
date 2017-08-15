@@ -25,6 +25,8 @@ defmodule Ethereumex.HttpClient do
   end
 
   defp decode_body(body, code) do
+    IO.puts "Body is:"
+    IO.inspect body
     decoded_body = body |> Poison.decode!
 
     case {code, decoded_body} do
